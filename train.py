@@ -290,7 +290,7 @@ def train(diffusion, model, ema, ema_model, vae, optimizer, mse_loss, loader, nu
 def main():
     '''Main function'''
     parser = argparse.ArgumentParser()
-    parser.add_argument('--epochs', type=int, default=1000)
+    parser.add_argument('--epochs', type=int, default=100)
     parser.add_argument('--batch_size', type=int, default=224)
     parser.add_argument('--num_workers', type=int, default=4) 
     parser.add_argument('--img_size', type=int, default=(64, 256))  
@@ -329,7 +329,7 @@ def main():
             class_dict[j] = i
 
         transforms = torchvision.transforms.Compose([
-                        torchvision.transforms.Resize((64, 128)),
+                        torchvision.transforms.Resize(args.img_size),
                         torchvision.transforms.ToTensor(),
                         torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
                             ])
