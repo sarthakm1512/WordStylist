@@ -365,6 +365,8 @@ def main():
         f.close()
         
         train_ds = IAMDataset(full_dict, args.iam_path, wr_dict, args, transforms=transforms)
+        a, b, c = train_ds[0]
+        print(f"Prepared dataset returning shape - [{a.size()}, {b.size()}, {c.size()}]")
         
         train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers)
     
