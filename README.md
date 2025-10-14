@@ -1,3 +1,6 @@
+> [!NOTE]
+> This repository aims to understand and modify the WordStylist codebase.
+
 # Official PyTorch Implementation of "WordStylist: Styled Verbatim Handwritten Text Generation with Latent Diffusion Models" - ICDAR 2023
 
 <!-- 
