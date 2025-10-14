@@ -65,7 +65,7 @@ def main():
     parser.add_argument('--mix_rate', type=int, default=1)
     parser.add_argument('--stable_dif_path', type=str, default='runwayml/stable-diffusion-v1-5')
     parser.add_argument('--models_path', type=str, default='/path/to/trained/models')
-    parser.add_argument('--words', type=list, default=['hello', 'MOVE'])
+    parser.add_argument('--words', type=str, default='hello,MOVE')
     
     args = parser.parse_args()
     
@@ -78,7 +78,7 @@ def main():
     else:
         print('16 classes')
         labels = torch.arange(16).long().to(args.device)
-    words = args.words #produce, greater, music, queer, clearly, edifice, freedom, MOVE, life, sweet, several, months
+    words = args.words.split(',') #produce, greater, music, queer, clearly, edifice, freedom, MOVE, life, sweet, several, months
     
     print('words', words)
     diffusion = Diffusion(img_size=args.img_size, args=args)
