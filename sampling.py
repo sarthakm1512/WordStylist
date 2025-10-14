@@ -63,7 +63,7 @@ def main():
     parser.add_argument('--single_image', type=bool, default=True)
     parser.add_argument('--interpolation', type=bool, default=False)
     parser.add_argument('--mix_rate', type=int, default=1)
-    parser.add_argument('--stable_dif_path', type=str, default='./stable-diffusion-v1-5')
+    parser.add_argument('--stable_dif_path', type=str, default='runwayml/stable-diffusion-v1-5')
     parser.add_argument('--models_path', type=str, default='/path/to/trained/models')
     parser.add_argument('--words', type=list, default=['hello', 'MOVE'])
     
