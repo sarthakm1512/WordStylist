@@ -309,7 +309,7 @@ def main():
     parser.add_argument('--img_feat', type=bool, default=True)
     parser.add_argument('--interpolation', type=bool, default=False)
     parser.add_argument('--writer_dict', type=str, default='./writers_dict.json')
-    parser.add_argument('--stable_dif_path', type=str, default='./stable-diffusion-v1-5', help='path to stable diffusion')
+    parser.add_argument('--stable_dif_path', type=str, default='runwayml/stable-diffusion-v1-5', help='path to stable diffusion')
     
     
     args = parser.parse_args()
