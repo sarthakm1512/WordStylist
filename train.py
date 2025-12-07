@@ -197,10 +197,8 @@ class Diffusion:
     def sampling(self, model, vae, n, x_text, labels, args, mix_rate=None, cfg_scale=3):
         model.eval()
         tensor_list = []
-        # if mix_rate is not None:
-        #   print('mix rate', mix_rate)
-        with torch.no_grad():
 
+        with torch.no_grad():
             words = [x_text] * n
             for word in words:
                 transcript = label_padding(
@@ -221,16 +219,18 @@ class Diffusion:
                     args.device
                 )
 
-            for i in tqdm(reversed(range(1, self.noise_steps)), position=0):
+            for i in tqdm(
+                reversed(range(1, self.noise_steps)),
+                desc="DDPM Sampling",
+                total=self.noise_steps,
+            ):
                 t = (torch.ones(n) * i).long().to(self.device)
-                predicted_noise = model(
-                    x, None, t, text_features, labels, mix_rate=mix_rate
-                )
+                predicted_noise = model(x, t, text_features, labels, mix_rate=mix_rate)
                 if cfg_scale > 0:
                     # uncond_predicted_noise = model(x, t, text_features, sid)
                     # predicted_noise = torch.lerp(uncond_predicted_noise, predicted_noise, cfg_scale)
                     uncond_predicted_noise = model(
-                        x, None, t, text_features, labels, mix_rate=mix_rate
+                        x, t, text_features, labels, mix_rate=mix_rate
                     )
                     predicted_noise = torch.lerp(
                         uncond_predicted_noise, predicted_noise, cfg_scale
