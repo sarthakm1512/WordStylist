@@ -2,7 +2,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from utils import (
+
+from unet.utils import (
     TimestepBlock,
     checkpoint,
     count_flops_attn,

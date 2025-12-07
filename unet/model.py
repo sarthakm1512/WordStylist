@@ -3,8 +3,9 @@ from typing import List
 
 import torch
 import torch.nn as nn
-from blocks import AttentionBlock, CharacterEncoder, Downsample, ResBlock, Upsample
-from utils import (
+
+from unet.blocks import AttentionBlock, CharacterEncoder, Downsample, ResBlock, Upsample
+from unet.utils import (
     SpatialTransformer,
     TimestepEmbedSequential,
     conv_nd,
