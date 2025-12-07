@@ -13,7 +13,7 @@ from diffusers.models.autoencoders.autoencoder_kl import AutoencoderKL
 from PIL import Image
 from torch import optim
 from torch.utils.data import DataLoader, Dataset
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 from unet import UNetModel
 
@@ -272,9 +272,9 @@ def train(diffusion, model, ema, ema_model, vae, optimizer, mse_loss, loader, ar
     model.train()
 
     print("Training started....")
-    for epoch in range(args.epochs):
-        print("Epoch:", epoch)
-        pbar = tqdm(loader)
+    for epoch in range(1, args.epochs + 1):
+        n = len(str(args.epochs))
+        pbar = tqdm(loader, desc=f"Epoch: [{epoch:0{n}d}/{args.epochs}]")
 
         for images, word, s_id in pbar:
             images = images.to(args.device)
