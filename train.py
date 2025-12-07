@@ -278,7 +278,6 @@ def train(diffusion, model, ema, ema_model, vae, optimizer, mse_loss, loader, ar
 
         for images, word, s_id in pbar:
             images = images.to(args.device)
-            original_images = images
             text_features = word.to(args.device)
 
             s_id = s_id.to(args.device)
@@ -295,15 +294,13 @@ def train(diffusion, model, ema, ema_model, vae, optimizer, mse_loss, loader, ar
 
             predicted_noise = model(
                 x_t,
-                original_images=original_images,
                 timesteps=t,
                 context=text_features,
                 y=s_id,
-                or_images=None,
             )
 
-            loss = mse_loss(noise, predicted_noise)
             optimizer.zero_grad()
+            loss = mse_loss(noise, predicted_noise)
             loss.backward()
             optimizer.step()
             ema.step_ema(ema_model, model)
@@ -349,7 +346,7 @@ def main():
     """Main function"""
     parser = argparse.ArgumentParser()
     parser.add_argument("--epochs", type=int, default=100)
-    parser.add_argument("--batch_size", type=int, default=224)
+    parser.add_argument("--batch_size", type=int, default=4)
     parser.add_argument("--num_workers", type=int, default=4)
     parser.add_argument("--img_size", type=int, default=(64, 256))
     parser.add_argument(
@@ -493,15 +490,15 @@ def main():
         vae = None
 
     train(
-        diffusion,
-        unet,
-        ema,
-        ema_model,
-        vae,
-        optimizer,
-        mse_loss,
-        train_loader,  # pyright: ignore
-        args,
+        diffusion=diffusion,
+        model=unet,
+        ema=ema,
+        ema_model=ema_model,
+        vae=vae,
+        optimizer=optimizer,
+        mse_loss=mse_loss,
+        loader=train_loader,  # pyright: ignore
+        args=args,
     )
 
 

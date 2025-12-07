@@ -40,26 +40,62 @@ class CheckpointFunction(torch.autograd.Function):
 
     @staticmethod
     def backward(ctx, *output_grads):
+        saved_inputs = ctx.input_tensors
+        saved_params = ctx.input_params
 
-        ctx.input_tensors = [
-            x.float().detach().requires_grad_(True) for x in ctx.input_tensors
-        ]
+        detached_inputs = []
+        non_none_indices = []
+        for i, x in enumerate(saved_inputs):
+            if x is None:
+                detached_inputs.append(None)
+            else:
+                y = x.float().detach().requires_grad_(True)
+                detached_inputs.append(y)
+                non_none_indices.append(i)
+
         with torch.enable_grad():
-            # Fixes a bug where the first op in run_function modifies the
-            # Tensor storage in place, which is not allowed for detach()'d
-            # Tensors.
-            shallow_copies = [x.view_as(x) for x in ctx.input_tensors]
+            # avoid in-place storage changes by using view_as for non-None tensors
+            shallow_copies = [
+                x.view_as(x) if x is not None else None for x in detached_inputs
+            ]
             output_tensors = ctx.run_function(*shallow_copies)
-        input_grads = torch.autograd.grad(
-            output_tensors,
-            ctx.input_tensors + ctx.input_params,
-            output_grads,
+
+        # make outputs a tuple (autograd.grad expects a sequence)
+        if not isinstance(output_tensors, tuple):
+            output_tensors = (output_tensors,)
+
+        grad_inputs = [detached_inputs[i] for i in non_none_indices] + list(
+            saved_params
+        )
+
+        # compute grads
+        grads = torch.autograd.grad(
+            outputs=output_tensors,
+            inputs=tuple(grad_inputs),
+            grad_outputs=output_grads,
             allow_unused=True,
         )
+
+        num_non_none = len(non_none_indices)
+        grads_for_inputs = grads[:num_non_none]
+        grads_for_params = grads[num_non_none:]
+
+        # reconstruct input grads aligned with original saved_inputs (None -> None)
+        input_grads_aligned = []
+        gi = 0
+        for i in range(len(saved_inputs)):
+            if i in non_none_indices:
+                input_grads_aligned.append(grads_for_inputs[gi])
+                gi += 1
+            else:
+                input_grads_aligned.append(None)
+
+        # cleanup
         del ctx.input_tensors
         del ctx.input_params
         del output_tensors
-        return (None, None) + input_grads
+
+        return (None, None) + tuple(input_grads_aligned) + tuple(grads_for_params)
 
 
 def exists(val):
