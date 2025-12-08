@@ -343,7 +343,7 @@ def main():
     parser.add_argument("--epochs", type=int, default=100)
     parser.add_argument("--batch_size", type=int, default=4)
     parser.add_argument("--num_workers", type=int, default=4)
-    parser.add_argument("--img_size", type=int, default=(64, 256))
+    parser.add_argument("--img_size", type=int, nargs=2, default=(32, 128))
     parser.add_argument(
         "--dataset", type=str, default="iam", help="iam or other dataset"
     )
