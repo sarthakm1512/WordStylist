@@ -306,40 +306,35 @@ def train(diffusion, model, ema, ema_model, vae, optimizer, mse_loss, loader, ar
             ema.step_ema(ema_model, model)
             pbar.set_postfix(MSE=loss.item())
 
-        if epoch % 100 == 0:
-            # if args.img_feat is True:
-            #     n=16
-            #     labels = image_features
-            # else:
-            labels = torch.arange(16).long().to(args.device)
-            n = len(labels)
+        labels = torch.arange(16).long().to(args.device)
+        n = len(labels)
 
-            words = ["text", "getting", "prop"]
-            for x_text in words:
-                ema_sampled_images = diffusion.sampling(
-                    ema_model, vae, n=n, x_text=x_text, labels=labels, args=args
+        words = ["text", "getting", "prop"]
+        for x_text in words:
+            ema_sampled_images = diffusion.sampling(
+                ema_model, vae, n=n, x_text=x_text, labels=labels, args=args
+            )
+            sampled_ema = save_images(
+                ema_sampled_images,
+                os.path.join(args.save_path, "images", f"{x_text}_{epoch}.jpg"),
+                args,
+            )
+            if args.wandb_log:
+                wandb_sampled_ema = wandb.Image(
+                    sampled_ema, caption=f"{x_text}_{epoch}"
                 )
-                sampled_ema = save_images(
-                    ema_sampled_images,
-                    os.path.join(args.save_path, "images", f"{x_text}_{epoch}.jpg"),
-                    args,
-                )
-                if args.wandb_log:
-                    wandb_sampled_ema = wandb.Image(
-                        sampled_ema, caption=f"{x_text}_{epoch}"
-                    )
-                    wandb.log({"Sampled images": wandb_sampled_ema})
-            torch.save(
-                model.state_dict(), os.path.join(args.save_path, "models", "ckpt.pt")
-            )
-            torch.save(
-                ema_model.state_dict(),
-                os.path.join(args.save_path, "models", "ema_ckpt.pt"),
-            )
-            torch.save(
-                optimizer.state_dict(),
-                os.path.join(args.save_path, "models", "optim.pt"),
-            )
+                wandb.log({"Sampled images": wandb_sampled_ema})
+        torch.save(
+            model.state_dict(), os.path.join(args.save_path, "models", "ckpt.pt")
+        )
+        torch.save(
+            ema_model.state_dict(),
+            os.path.join(args.save_path, "models", "ema_ckpt.pt"),
+        )
+        torch.save(
+            optimizer.state_dict(),
+            os.path.join(args.save_path, "models", "optim.pt"),
+        )
 
 
 def main():
