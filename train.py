@@ -4,6 +4,7 @@ import json
 import os
 from typing import Callable
 
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch.nn as nn
@@ -16,6 +17,8 @@ from torch.utils.data import DataLoader, Dataset
 from tqdm.auto import tqdm
 
 from unet import UNetModel
+
+plt.rcParams["font.family"] = "STIXGeneral"
 
 MAX_CHARS = 10
 OUTPUT_MAX_LEN = MAX_CHARS  # + 2  # <GO>+groundtruth+<END>
@@ -269,44 +272,69 @@ class Diffusion:
         return x
 
 
+def train_epoch(
+    diffusion, model, ema, ema_model, vae, mse_loss, loader, optimizer, desc, args
+):
+    pbar = tqdm(loader, desc=desc)
+    train_loss = 0
+    num_batches = len(loader)
+
+    for images, word, s_id in pbar:
+        images = images.to(args.device)
+        text_features = word.to(args.device)
+
+        s_id = s_id.to(args.device)
+
+        if args.latent:
+            images = vae.encode(images.to(torch.float32)).latent_dist.sample()
+            images = images * 0.18215
+
+        t = diffusion.sample_timesteps(images.shape[0]).to(args.device)
+        x_t, noise = diffusion.noise_images(images, t)
+
+        predicted_noise = model(
+            x_t,
+            timesteps=t,
+            context=text_features,
+            y=s_id,
+        )
+
+        optimizer.zero_grad()
+        loss = mse_loss(noise, predicted_noise)
+        loss.backward()
+        optimizer.step()
+        ema.step_ema(ema_model, model)
+        pbar.set_postfix(MSE=loss.item())
+
+        train_loss += loss.item()
+
+    return train_loss / num_batches
+
+
 def train(diffusion, model, ema, ema_model, vae, optimizer, mse_loss, loader, args):
     model.train()
     interval = max(args.epochs // 10, 1)
+    train_losses = []
 
     print("Training started....")
     for epoch in range(1, args.epochs + 1):
         n = len(str(args.epochs))
-        pbar = tqdm(loader, desc=f"Epoch: [{epoch:0{n}d}/{args.epochs}]")
+        desc = f"Epoch: [{epoch:0{n}d}/{args.epochs}]"
 
-        for images, word, s_id in pbar:
-            images = images.to(args.device)
-            text_features = word.to(args.device)
+        train_loss = train_epoch(
+            diffusion,
+            model,
+            ema,
+            ema_model,
+            vae,
+            mse_loss,
+            loader,
+            optimizer,
+            desc,
+            args,
+        )
 
-            s_id = s_id.to(args.device)
-
-            if args.latent:
-                images = vae.encode(images.to(torch.float32)).latent_dist.sample()
-                images = images * 0.18215
-
-            t = diffusion.sample_timesteps(images.shape[0]).to(args.device)
-            x_t, noise = diffusion.noise_images(images, t)
-
-            if np.random.random() < 0.1:
-                labels = None
-
-            predicted_noise = model(
-                x_t,
-                timesteps=t,
-                context=text_features,
-                y=s_id,
-            )
-
-            optimizer.zero_grad()
-            loss = mse_loss(noise, predicted_noise)
-            loss.backward()
-            optimizer.step()
-            ema.step_ema(ema_model, model)
-            pbar.set_postfix(MSE=loss.item())
+        train_losses.append(train_loss)
 
         if epoch == 1 or (epoch % interval) == 0:
             labels = torch.arange(16).long().to(args.device)
@@ -338,6 +366,13 @@ def train(diffusion, model, ema, ema_model, vae, optimizer, mse_loss, loader, ar
                 optimizer.state_dict(),
                 os.path.join(args.save_path, "models", "optim.pt"),
             )
+
+    plt.plot(range(1, len(train_losses) + 1), train_losses)
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss")
+    plt.title("Loss Epoch Distribution", fontweight="bold")
+    plt.grid()
+    plt.savefig(os.path.join(args.save_path, "loss.png"))
 
 
 def main():
