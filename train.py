@@ -271,6 +271,7 @@ class Diffusion:
 
 def train(diffusion, model, ema, ema_model, vae, optimizer, mse_loss, loader, args):
     model.train()
+    interval = max(args.epochs // 10, 1)
 
     print("Training started....")
     for epoch in range(1, args.epochs + 1):
@@ -307,7 +308,7 @@ def train(diffusion, model, ema, ema_model, vae, optimizer, mse_loss, loader, ar
             ema.step_ema(ema_model, model)
             pbar.set_postfix(MSE=loss.item())
 
-        if (epoch - 1) % (args.epochs // 10) == 0:
+        if epoch == 1 or (epoch % interval) == 0:
             labels = torch.arange(16).long().to(args.device)
             n = len(labels)
 
